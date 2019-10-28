@@ -23,14 +23,14 @@ if [ ! -f "$bind_zone_path" ]; then
 fi
 
 for line in $hosts_list; do
-    wp_list=$(cat $bind_zone_path | grep $line | awk '{print $1;}')
-    for wp in $wp_list; do
-	echo
-	echo '('$wp')'
-	
+  wp_list=$(cat $bind_zone_path | grep $line | awk '{print $1;}')
+  for wp in $wp_list; do
+		echo
+		echo '('$wp')'
+
 	# Command execution
-	(ssh -n -o "BatchMode=yes" -o "ConnectTimeout=1" -o "StrictHostKeyChecking=no" $wp $1)
-    done
+		(ssh -n -o "BatchMode=yes" -o "ConnectTimeout=1" -o "StrictHostKeyChecking=no" $wp $1)
+  done
 done
 
 
