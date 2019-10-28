@@ -1,0 +1,26 @@
+#!/bin/bash
+
+# Author: Alex Anenkov
+# The script takes list of the DNS names of all machines from the zone file using 'grep' (using a regular expression)
+# and then the list is checked for online by 'nmap'
+
+if ! [ -x "$(command -v nmap)" ]; then
+    echo "Error: nmap is not installed." >&2
+    exit -1
+fi
+
+readonly dns_list="^.wp[0-9][0-9]"						# regular expression for grep
+readonly bind_zone_path="/var/named/zones/csc.zone"
+
+if [ ! -f "$bind_zone_path" ]; then
+    echo "File '$bind_zone_path' not found!"; exit -1
+fi
+
+for dns_line in $dns_list; do
+    wp_list=$(cat $bind_zone_path | grep $dns_line | awk '{print $1;}')		# list of working machines
+
+    #echo "The following machines are online:"
+    (nmap -T5 -sP $wp_list | grep report | awk '{print $5}')			# nmap accepts a list of machines
+done
+
+exit 0

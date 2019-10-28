@@ -1,0 +1,33 @@
+#!/bin/bash
+
+# Author: Alex Anenkov
+# This script executes the command on all machines in the classes. Hostnames are taken directly from the DNS zone by a pattern.
+# Usage: fe-fast '<command>'
+
+readonly me=$(basename "$0")
+
+# Checking the input parameters
+if [ -z "$1" ]; then
+	echo "Incorrect parameters!"
+	echo "Usage: $me <command>"
+	echo "Example: $me hostname"
+	echo
+	echo "About: This script executes the command on all machines in the classes. Hostnames are taken directly from the DNS zone by a pattern."
+	exit -1
+fi
+
+readonly DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+
+# Get the list of machines which are online
+readonly wp_list=$($DIR/print-which-machines-online)
+
+for wp in $wp_list; do
+    echo
+    echo '('$wp')'
+
+    # Command execution
+    (ssh -n -o "BatchMode=yes" -o "ConnectTimeout=1" -o "StrictHostKeyChecking=no" $wp $1)
+done
+
+
+exit 0

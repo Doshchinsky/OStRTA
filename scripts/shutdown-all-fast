@@ -1,0 +1,15 @@
+#!/bin/bash
+
+# Author: Alex Anenkov
+
+readonly dir=$(dirname "$0")
+readonly script_path=$dir/fe-fast
+readonly cmd_line="poweroff"
+
+if [ ! -f "$script_path" ]; then
+    echo "Script '$script_path' not found!"; exit -1
+fi
+
+($script_path "$cmd_line")
+
+exit 0

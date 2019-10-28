@@ -1,0 +1,37 @@
+#!/bin/bash
+
+# This script executes the command on all machines in the classes. Hostnames are taken directly from the DNS zone by a pattern.
+
+readonly me=$(basename "$0")
+
+# Checking the input parameters
+if [ -z "$1" ]; then
+	echo "Incorrect parameters!"
+	echo "Usage: $me <command>"
+	echo "Example: $me hostname"
+	echo
+	echo "About: This script executes the command on all machines in the classes. Hostnames are taken directly from the DNS zone by a pattern."
+	exit -1
+fi
+
+#readonly hosts_list="awp cwp bwp lwp mwp rwp"
+readonly hosts_list="^.wp[0-9][0-9]"	# regular expression for grep
+readonly bind_zone_path="/var/named/zones/csc.zone"
+
+if [ ! -f "$bind_zone_path" ]; then
+    echo "File '$bind_zone_path' not found!"; exit -2
+fi
+
+for line in $hosts_list; do
+    wp_list=$(cat $bind_zone_path | grep $line | awk '{print $1;}')
+    for wp in $wp_list; do
+	echo
+	echo '('$wp')'
+	
+	# Command execution
+	(ssh -n -o "BatchMode=yes" -o "ConnectTimeout=1" -o "StrictHostKeyChecking=no" $wp $1)
+    done
+done
+
+
+exit 0
