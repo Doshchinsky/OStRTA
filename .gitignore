@@ -1,3 +1,2 @@
 /log/*
-dhcpd.conf
-csc.zone
+conf/*
