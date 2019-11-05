@@ -6,10 +6,9 @@ WakeOnLan() {
     addr=$(echo $tmp_string | awk '{print $2;}')
     PROBE_PING=`ping -s 1 -c 2 $hostname".csc.local" &> /dev/null; echo $?`
     if [ $PROBE_PING -eq 0 ];then
-      echo -e "\e[1;93m[OStRTA]\e[1;97m\t$hostname is \e[1;92mUP\e[1;97m as on $(date)\e[0;97m"
-      exit 0
+      echo -e "\e[1;93m[OStRTA]\e[1;97m\t$hostname is \e[1;92mUP\e[1;97m at $(date)\e[0;97m"
     elif [ $PROBE_PING -eq 1 ];then
-      ether-wake -i enp3s0 $addr | echo -e "\e[1;93m[OStRTA]\e[1;97m\t$hostname is not turned on. WoL-packet sent at $(date +%H:%M)\e[0;97m"
+      ether-wake -i enp3s0 $addr | echo -e "\e[1;93m[OStRTA]\e[1;97m\t$hostname is \e[1;91mDOWN\e[1;97m state. WoL-packet sent at $(date +%H:%M)\e[0;97m"
     fi
   done < $mac_path
 
@@ -20,7 +19,7 @@ WakeOnLan() {
     addr=$(echo $tmp_string | awk '{print $2;}')
     PROBE_PING=`ping -s 1 -c 4 $hostname".csc.local" &> /dev/null; echo $?`
     if [ $PROBE_PING -eq 0 ];then
-      echo -e "\e[1;93m[OStRTA]\e[1;97m\t$hostname is \e[1;92mUP\e[1;97m as on $(date +%H:%M)\e[0;97m"
+      echo -e "\e[1;93m[OStRTA]\e[1;97m\t$hostname is \e[1;92mUP\e[1;97m at $(date +%H:%M)\e[0;97m"
     else
       echo -e "\e[1;93m[OStRTA]\e[1;97m\t$(date +%D\ %H:%M) : $hostname is still in \e[1;91mDOWN\e[1;97m state. Checkout connection and host's BIOS settings\e[0;97m"
       echo "$(date +%D\ %H:%M) : $hostname is still in DOWN state." >> ./log/$(date +%d%m%Y).log
@@ -33,7 +32,7 @@ SendShutdown() {
     hostname=$(echo $tmp_string | awk '{print $1;}')
     PROBE_PING=`ping -s 1 -c 2 $hostname".csc.local" &> /dev/null; echo $?`
     if [ $PROBE_PING -eq 1 ];then
-      echo -e "\e[1;93m[OStRTA]\e[1;97m\t$hostname is \e[1;92mDOWN\e[1;97m as on $(date)"
+      echo -e "\e[1;93m[OStRTA]\e[1;97m\t$hostname is \e[1;92mDOWN\e[1;97m at $(date)"
     elif [ $PROBE_PING -eq 0 ];then
       # Who is the last user? We'll know right back
       (ssh -n -o "BatchMode=yes" -o "ConnectTimeout=1" -o "StrictHostKeyChecking=no" $hostname".csc.local" `shutdown 0`)| echo -e "\e[1;93m[OStRTA]\e[1;97m\tHyperion is UP. Poweroff signal sent at $(date +%H:%M)\e[0;97m"
@@ -48,7 +47,7 @@ SendShutdown() {
       echo -e "\e[1;93m[OStRTA]\e[1;97m\t$(date +%D\ %H:%M) : Host $hostname is still in \e[1;91mUP\e[1;97m state\e[0;97m"
       echo "$(date +%D\ %H:%M) : Shutdown incomplete" >> ./log/$(date +%d%m%Y).log
     else
-      echo -e "\e[1;93m[OStRTA]\e[1;97m\t$hostname is \e[1;92mDOWN\e[1;97m as on $(date +%H:%M)\e[0;97m"
+      echo -e "\e[1;93m[OStRTA]\e[1;97m\t$hostname is \e[1;92mDOWN\e[1;97m at $(date +%H:%M)\e[0;97m"
     fi
   done < $mac_path
 }
@@ -68,7 +67,7 @@ fi
 
 readonly me=$(basename "$0")
 readonly template="^.wp[0-9][0-9]"	# regular expression for grep
-readonly mac_path="./conf/mac.dat"
+readonly mac_path="./conf/addr.dat"
 ACTION=0
 
 while [ -n "$1" ]; do
