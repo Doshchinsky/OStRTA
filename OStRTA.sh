@@ -9,8 +9,7 @@ WakeOnLan() {
       echo -e "\e[1;93m[OStRTA]\e[1;97m\t$hostname is \e[1;92mUP\e[1;97m as on $(date)\e[0;97m"
       exit 0
     elif [ $PROBE_PING -eq 1 ];then
-      # ether-wake -i enp3s0 $addr | echo -e "\e[1;93m[OStRTA]\e[1;97m\t$hostname is not turned on. WoL-packet sent at $(date +%H:%M)\e[0;97m"
-      echo "Waking"
+      ether-wake -i enp3s0 $addr | echo -e "\e[1;93m[OStRTA]\e[1;97m\t$hostname is not turned on. WoL-packet sent at $(date +%H:%M)\e[0;97m"
     fi
   done < $mac_path
 
@@ -36,6 +35,7 @@ SendShutdown() {
     if [ $PROBE_PING -eq 1 ];then
       echo -e "\e[1;93m[OStRTA]\e[1;97m\t$hostname is \e[1;92mDOWN\e[1;97m as on $(date)"
     elif [ $PROBE_PING -eq 0 ];then
+      # Who is the last user? We'll know right back
       (ssh -n -o "BatchMode=yes" -o "ConnectTimeout=1" -o "StrictHostKeyChecking=no" $hostname".csc.local" `shutdown 0`)| echo -e "\e[1;93m[OStRTA]\e[1;97m\tHyperion is UP. Poweroff signal sent at $(date +%H:%M)\e[0;97m"
     fi
   done < $mac_path
@@ -54,7 +54,7 @@ SendShutdown() {
 }
 
 WhoIsOnline() {
-  echo "Will be here a bit later..."
+  echo "Done nothing. Work in progress."
 }
 
 #---------------------
@@ -107,8 +107,7 @@ if [[ ACTION -eq 1 ]]; then
 elif [[ ACTION -eq 2 ]]; then
   SendShutdown
 elif [[ ACTION -eq 3 ]]; then
-  echo "WhoIsOnline"
-  #WhoIsOnline
+  WhoIsOnline
 else
   echo -e "\e[1;91mOwO\e[0;97m\n"
   exit -4
