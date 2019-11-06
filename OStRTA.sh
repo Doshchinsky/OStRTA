@@ -12,12 +12,12 @@ WakeOnLan() {
     fi
   done < $addr_path
 
-  sleep 3m | echo -e "\e[1;93m[OStRTA]\e[1;97m\tWaiting 3 Minutes until all hosts wake up...\e[0;97m"
+  sleep 30s | echo -e "\e[1;93m[OStRTA]\e[1;97m\tWait 30 seconds for all hosts to wake up...\e[0;97m"
 
   while read tmp_string; do
     hostname=$(echo $tmp_string | awk '{print $1;}')
     addr=$(echo $tmp_string | awk '{print $2;}')
-    PROBE_PING=`ping -s 1 -c 4 $hostname &> /dev/null; echo $?`
+    PROBE_PING=`ping -s 1 -c 2 $hostname &> /dev/null; echo $?`
     if [ $PROBE_PING -eq 0 ];then
       echo -e "\e[1;93m[OStRTA]\e[1;97m\t$hostname is \e[1;92mUP\e[1;97m at $(date +%H:%M)\e[0;97m"
     else
@@ -39,12 +39,12 @@ SendShutdown() {
     fi
   done < $addr_path
 
-  sleep 1m | echo -e "\e[1;93m[OStRTA]\e[1;97m\tWaiting 2 Minutes until all hosts shut down...\e[0;97m"
+  echo -e "\e[1;93m[OStRTA]\e[1;97m\tCheck if all hosts shutted down...\e[0;97m"
 
   while read tmp_string; do
     hostname=$(echo $tmp_string | awk '{print $1;}')
-    TEST_PING=`ping -s 1 -c 4 $hostname &> /dev/null; echo $?`
-    if [ $TEST_PING -eq 0 ];then
+    PROBE_PING=`ping -s 1 -c 2 $hostname &> /dev/null; echo $?`
+    if [ $PROBE_PING -eq 0 ];then
       echo -e "\e[1;93m[OStRTA]\e[1;97m\t$(date +%D\ %H:%M) : Host $hostname is still in \e[1;91mUP\e[1;97m state\e[0;97m"
       echo "$(date +%D\ %H:%M) : Shutdown incomplete" >> ./log/$(date +%d%m%Y).log
     else
@@ -53,8 +53,25 @@ SendShutdown() {
   done < $addr_path
 }
 
+# Unstable. May be don't work correct
 WhoIsOnline() {
-  echo "Done nothing. Work in progress."
+  OnlineAmount=0
+  TotalHosts=0
+  OnlineHosts=()
+  while read tmp_string; do
+    TotalHosts=$((TotalHosts+1))
+    hostname=$(echo $tmp_string | awk '{print $1;}')
+    PROBE_PING=`ping -s 1 -c 2 $hostname &> /dev/null; echo $?`
+    if [ $PROBE_PING -eq 0 ];then
+      OnlineAmount=$((OnlineAmount+1))
+      OnlineHosts+=($hostname)
+      echo -ne "\e[1;93m[OStRTA]\e[1;97m\t$hostname is \e[1;92mUP\e[1;97m at $(date +%H:%M)\e[0;97m"
+    elif [ $PROBE_PING -eq 1 ];then
+      echo -ne "\e[1;93m[OStRTA]\e[1;97m\t$hostname is \e[1;91mDOWN\e[1;97m at $(date +%H:%M)\e[0;97m"
+    fi
+  done < $addr_path
+  echo -e "\e[1;93m[OStRTA]\e[1;97m\t$OnlineAmount/$TotalHosts are \e[1;92mUP\e[1;97m at $(date +%H:%M)\e[0;97m"
+  # Checking last user logged in. Coming soon
 }
 
 #---------------------
@@ -66,7 +83,7 @@ if [ -z "$1" ]; then
   exit 1
 fi
 
-addr_path="conf/addr.dat"
+addr_path="/root/manage-classes/OStRTA/conf/addr.dat"
 ACTION=0
 
 while [ -n "$1" ]; do
@@ -122,14 +139,11 @@ done
 # Command execution
 
 if [[ ACTION -eq 1 ]]; then
-  # WakeOnLan
-  echo $addr_path
+  WakeOnLan
 elif [[ ACTION -eq 2 ]]; then
-  # SendShutdown
-  echo $addr_path
+  SendShutdown
 elif [[ ACTION -eq 3 ]]; then
-  # WhoIsOnline
-  echo $addr_path
+  WhoIsOnline
 else
   echo -e "\e[1;91mOwO\e[0;97m\n"
   exit 5
