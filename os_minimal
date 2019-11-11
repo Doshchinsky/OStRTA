@@ -1,0 +1,113 @@
+#!/bin/bash
+WakeOnLan() {
+  while read tmp_string; do
+    hostname=$(echo $tmp_string | awk '{print $1;}')
+    addr=$(echo $tmp_string | awk '{print $2;}')
+    PROBE_PING=`ping -s 1 -c 2 $hostname &> /dev/null; echo $?`
+    if [ $PROBE_PING -eq 1 ];then
+      ether-wake -i enp3s0 $addr
+    fi
+  done < $addr_path
+  while read tmp_string; do
+    hostname=$(echo $tmp_string | awk '{print $1;}')
+    addr=$(echo $tmp_string | awk '{print $2;}')
+    PROBE_PING=`ping -s 1 -c 2 $hostname &> /dev/null; echo $?`
+    if [ $PROBE_PING -eq 1 ];then
+      echo "$(date +%D\ %H:%M) : $hostname is still in DOWN state." >> ./log/$(date +%d%m%Y).log
+    fi
+  done < $addr_path
+}
+SendShutdown() {
+  while read tmp_string; do
+    hostname=$(echo $tmp_string | awk '{print $1;}')
+    PROBE_PING=`ping -s 1 -c 2 $hostname &> /dev/null; echo $?`
+    if [ $PROBE_PING -eq 1 ];then
+    elif [ $PROBE_PING -eq 0 ];then
+      # Who is the last user? We'll know right back
+      (ssh -n -o "BatchMode=yes" -o "ConnectTimeout=1" -o "StrictHostKeyChecking=no" $hostname shutdown 0)
+    fi
+  done < $addr_path
+  while read tmp_string; do
+    hostname=$(echo $tmp_string | awk '{print $1;}')
+    PROBE_PING=`ping -s 1 -c 2 $hostname &> /dev/null; echo $?`
+    if [ $PROBE_PING -eq 0 ];then
+      echo "$(date +%D\ %H:%M) : Shutdown incomplete" >> ./log/$(date +%d%m%Y).log
+    else
+    fi
+  done < $addr_path
+}
+# Unstable. May be don't work correct
+WhoIsOnline() {
+  OnlineAmount=0
+  TotalHosts=0
+  OnlineHosts=()
+  while read tmp_string; do
+    TotalHosts=$((TotalHosts+1))
+    hostname=$(echo $tmp_string | awk '{print $1;}')
+    PROBE_PING=`ping -s 1 -c 2 $hostname &> /dev/null; echo $?`
+    if [ $PROBE_PING -eq 0 ];then
+      OnlineAmount=$((OnlineAmount+1))
+      OnlineHosts+=($hostname)
+    fi
+  done < $addr_path
+  echo -e "\e[1;93m[OStRTA]\e[1;97m\t$OnlineAmount/$TotalHosts hosts are \e[1;92mUP\e[1;97m at $(date +%H:%M)\e[0;97m"
+  # Checking last user logged in. Coming soon
+  echo -e "\e[1;93m[OStRTA]\e[1;97m\tShow more details? (y/n)\e[0;97m"
+  read answer
+  for host in $OnlineHosts; do
+    echo -e "\t$host is \e[1;92mUP\e[1;97m\e[0;97m"
+  done
+}
+#---------------------
+# Start of the script
+#---------------------
+if [ -z "$1" ]; then
+  echo -e "\e[1;91mUse -h for help.\e[0;97m"
+  exit 1
+fi
+addr_path="/root/manage-classes/OStRTA/conf/addr.dat"
+ACTION=0
+while [ -n "$1" ]; do
+  case "$1" in
+    ACTION=1
+    if [ -n "$2" ]; then
+      if [ -f "conf/$2" ]; then
+        addr_path="conf/$2"
+      else
+        echo -e "   \e[1;91mNo such configuration file: '$2'...\e[0;97m"
+        exit 2
+      fi
+    fi
+    shift;;
+    -s)
+    if [[ ACTION -eq 1 ]]; then
+      exit 3
+    else
+      ACTION=2
+    fi
+    if [ -n "$2" ]; then
+      if [ -f "conf/$2" ]; then
+        addr_path="conf/$2"
+      else
+        echo -e "   \e[1;91mNo such configuration file: '$2'...\e[0;97m"
+        exit 2
+      fi
+    fi
+    shift;;
+    -l) echo -e "\n\e[1;93m==>\e[1;97m Searching for active hosts...\e[0;97m"
+    ACTION=3 ;;
+  esac
+  shift
+done
+# Command execution
+if [[ ACTION -eq 1 ]]; then
+  WakeOnLan
+elif [[ ACTION -eq 2 ]]; then
+  SendShutdown
+elif [[ ACTION -eq 3 ]]; then
+  WhoIsOnline
+else
+  echo -e "\e[1;91mOwO\e[0;97m\n"
+  exit 5
+fi
+exit 0
