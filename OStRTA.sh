@@ -14,7 +14,7 @@ WakeOnLan() {
     fi
   done < $addr_path
 
-  sleep 30s | echo -e "\e[1;93m==>\e[1;97m\tWait 30 seconds for all hosts to wake up...\e[0;97m"
+  sleep 1m | echo -e "\e[1;93m==>\e[1;97m\tWait 1 minute for all hosts to wake up...\e[0;97m"
 
   while read tmp_string; do
     hostname=$(echo $tmp_string | awk '{print $1;}')
@@ -36,8 +36,9 @@ SendShutdown() {
     if [ $PROBE_PING -eq 1 ];then
       echo -e "\e[1;92m[DOWN]\e[1;97m\tHost $hostname - $(date +%H:%M)\e[0;97m"
     elif [ $PROBE_PING -eq 0 ];then
-      # Who is the last user? We'll know right back
-      (ssh -n -o "BatchMode=yes" -o "ConnectTimeout=1" -o "StrictHostKeyChecking=no" $hostname shutdown 0 >& /dev/null)| echo -e "\e[1;91m[ UP ]\e[1;97m\tHost $hostname. Shutdown signal sent at $(date +%H:%M)\e[0;97m"
+      WhoIs=$(ssh -n -o "BatchMode=yes" -o "ConnectTimeout=1" -o "StrictHostKeyChecking=no" $hostname who 2> /dev/null | awk '{print $1;}')
+      echo "$(date +%D\ %H:%M) : User $WhoIs did not shutdown host $host." >> ./log/"BAN_LIST_"$(date +%d%m%Y).log
+      (ssh -n -o "BatchMode=yes" -o "ConnectTimeout=1" -o "StrictHostKeyChecking=no" $hostname shutdown 0 >& /dev/null)| echo -e "\e[1;91m[ UP ]\e[1;97m\tLast user $WhoIs on host $hostname. Shutdown signal sent at $(date +%H:%M)\e[0;97m"
     fi
   done < $addr_path
 
@@ -79,8 +80,7 @@ WhoIsOnline() {
   read answer
   for host in $OnlineHosts; do
     WhoIs=$(ssh -n -o "BatchMode=yes" -o "ConnectTimeout=1" -o "StrictHostKeyChecking=no" $host who 2> /dev/null | awk '{print $1;}')
-    echo -e "\e[1;92m[ UP ]\e[1;97m\tHost $host.\tLast User: $WhoIs\e[0;97m"
-    echo "$(date +%D\ %H:%M) : User $WhoIs did not shutdown host $host." >> ./log/"BAN_LIST_"$(date +%d%m%Y).log
+    echo -e "\e[1;92m[ UP ]\e[1;97m\tHost $host.\tCurrent User: $WhoIs\e[0;97m"
   done
 }
 
