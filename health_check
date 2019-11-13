@@ -1,0 +1,99 @@
+#!/bin/bash
+# Author: Alex Anenkov
+# Modifier: Ilya Doshchinsky
+# Version: 1.2
+
+if [ -z "$SYSINFO_ON_LOGIN_SHOWED" ] && [[ $- == *i* ]]; then
+  export SYSINFO_ON_LOGIN_SHOWED=1
+else
+  return 1
+fi
+
+RAM_INFO() {
+  output=$(free -m | awk 'NR==2{printf "%s/%sMB (%.2f%%)\n", $3,$2,$3*100/$2 }')
+  printf "\n\e[1;97m  %-25s %-20s\n" "RAM usage:" "$output"
+}
+
+CPI_INFO() {
+  output=$(uptime | grep load | awk '{printf $(NF-2)"\n"}' | sed 's/,/./;s/,//')
+  printf "\e[1;97m  %-25s %-20s\n" "CPU load:" "$output"
+}
+
+NET_INFO() {
+  if [[ `nslookup linux.csc.local &> /dev/null ; echo $?` -eq 0 ]]; then
+    output="\e[1;92m OK \e[1;97m"     # green text
+  else
+    output="\e[1;91mFAIL\e[1;97m"   # red text
+  fi
+  printf "\e[1;97m  %-25s %-20b\n" "DNS service:" "[$output]"
+
+  if [[ `ifconfig | grep "inet " | awk 'NR==1 {printf $(NF)"\n"}' | sed 's/\./\n/g' | awk NR==1` -ne 169 ]]; then
+    output="\e[1;92m OK \e[1;97m"     # green text
+  else
+    output="\e[1;91mFAIL\e[1;97m"   # red text
+  fi
+  printf "\e[1;97m  %-25s %-20b\n" "DHCP service:" "[$output]"
+}
+
+MNT_INFO() {
+  if [[ `mount | grep students &> /dev/null ; echo $?` -eq 0 && `mount | grep staff &> /dev/null ; echo $?` -eq 0 ]]; then
+    output="\e[1;92m OK \e[1;97m"     # green text
+  else
+    output="\e[1;91mFAIL\e[1;97m"   # red text
+  fi
+  printf "\e[1;97m  %-25s %-20b\n" "NFS service:" "[$output]"
+}
+
+SRV_INFO() {
+  for service in $1; do
+    CHECK=`systemctl -q is-active $service.service ; echo $?`
+    if [ $CHECK -eq 0 ]; then
+      output="\e[1;92m OK \e[1;97m"     # green text
+    else
+      CHECK=`systemctl restart $service.service &> /dev/null ; echo $?`
+      if [ $CHECK -ne 0 ]; then
+        output="\e[1;91mFAIL\e[1;97m"   # red text
+      fi
+    fi
+    printf "\e[1;97m  %-25s %-20b\n" "$service service:" "[$output]"
+  done
+}
+
+DEV_INFO() {
+  if [ -f /proc/mdstat ]; then
+    if [ -z "$(egrep '\[.*_.*\]' /proc/mdstat)" ]; then
+      output="\e[1;92m OK \e[1;97m"       # green text
+    else
+      output="\e[1;91mFAIL\e[1;97m"       # red text
+    fi
+    printf "\e[1;97m  %-25s %-20b\n" "RAID status:" "[$output]"
+  fi
+
+  if [[ `lspci | grep VGA &> /dev/null; echo $?` -eq 0 ]]; then
+    output="\e[1;92m OK \e[1;97m"       # green text
+  else
+    output="\e[1;91mFAIL\e[1;97m"       # red text
+  fi
+  printf "\e[1;97m  %-25s %-20b\n" "Monitor status:" "[$output]"
+
+  if [[ `cat /proc/bus/input/devices | grep .eyboard &> /dev/null; echo $?` -eq 0 ]]; then
+    output="\e[1;92m OK \e[1;97m"       # green text
+  else
+    output="\e[1;91mFAIL\e[1;97m"       # red text
+  fi
+  printf "\e[1;97m  %-25s %-20b\n" "Keyboard status:" "[$output]"
+
+  if [[ `cat /proc/bus/input/devices | grep .ouse &> /dev/null; echo $?` -eq 0 ]]; then
+    output="\e[1;92m OK \e[1;97m"       # green text
+  else
+    output="\e[1;91mFAIL\e[1;97m"       # red text
+  fi
+  printf "\e[1;97m  %-25s %-20b\n\e[0m\n" "Mouse status:" "[$output]"
+}
+
+RAM_INFO;
+CPI_INFO;
+NET_INFO;
+MNT_INFO;
+SRV_INFO "ypbind"; # you can edit this string by adding the services you need by separating them with a space
+DEV_INFO;

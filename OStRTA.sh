@@ -56,7 +56,6 @@ SendShutdown() {
   done < $addr_path
 }
 
-# Unstable. May be don't work correct
 WhoIsOnline() {
   OnlineAmount=0
   TotalHosts=0
