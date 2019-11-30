@@ -77,10 +77,12 @@ WhoIsOnline() {
   # Checking last user logged in. Coming soon
   echo -e "\e[1;97m\tShow more details? (y/n)\e[0;97m"
   read answer
-  for host in $OnlineHosts; do
-    WhoIs=$(ssh -n -o "BatchMode=yes" -o "ConnectTimeout=1" -o "StrictHostKeyChecking=no" $host who 2> /dev/null | awk '{print $1;}')
-    echo -e "\e[1;92m[ UP ]\e[1;97m\tHost $host.\tCurrent User: $WhoIs\e[0;97m"
-  done
+  if [[ "$answer" == "y" ]]; then
+    for host in $OnlineHosts; do
+      WhoIs=$(ssh -n -o "BatchMode=yes" -o "ConnectTimeout=1" -o "StrictHostKeyChecking=no" $host who 2> /dev/null | awk '{print $1;}')
+      echo -e "\e[1;92m[ UP ]\e[1;97m\tHost $host.\tCurrent User: $WhoIs\e[0;97m"
+    done
+  fi
 }
 
 #---------------------
